@@ -44,5 +44,5 @@ case class Future[T] private (val unwrap: concurrent.Future[T]) {
   
   def recoverWith(pf: PartialFunction[Throwable,Future[_ <: T]]): Future[T] = wrap(unwrap.recoverWith(pf.andThen(_.unwrap)))
 
-  def failed: Future[Throwable] = wrap(unwrap.failed)
+  def failure: Future[Throwable] = wrap(unwrap.failed)
 }
