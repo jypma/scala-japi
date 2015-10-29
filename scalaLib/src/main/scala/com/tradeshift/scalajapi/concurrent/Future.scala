@@ -4,7 +4,11 @@ import scala.concurrent
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
-import com.tradeshift.scalajapi.collect.{Seq => JSeq, Option => JOption} 
+import com.tradeshift.scalajapi.collect.{Seq => JSeq, Option => JOption}
+import java.time.Duration
+import java.util.concurrent.TimeUnit
+import java.time.Instant
+import java.util.concurrent.TimeoutException
 
 object Future {
   def wrap[T](scalaFuture: concurrent.Future[T]): Future[T] = new Future(scalaFuture)
@@ -27,7 +31,7 @@ object Future {
   private implicit val ctx = ExecutionContext.global
 }
 
-class Future[T] private (val unwrap: concurrent.Future[T]) {
+case class Future[T] private (val unwrap: concurrent.Future[T]) {
   import Future._
 
   def mapTo[T1](t: Class[T1]): Future[T1] = wrap(unwrap.mapTo[T1](ClassTag(t)))
@@ -39,5 +43,6 @@ class Future[T] private (val unwrap: concurrent.Future[T]) {
   def recover(pf: PartialFunction[Throwable,_ <: T]): Future[T] = wrap(unwrap.recover(pf))
   
   def recoverWith(pf: PartialFunction[Throwable,Future[_ <: T]]): Future[T] = wrap(unwrap.recoverWith(pf.andThen(_.unwrap)))
-  
+
+  def failed: Future[Throwable] = wrap(unwrap.failed)
 }

@@ -17,4 +17,8 @@ tests/.classpath
 tests/.project
 tests/.settings/
 tests/target/
-
+scalaLibTest/.classpath
+scalaLibTest/.gitignore
+scalaLibTest/.project
+scalaLibTest/.settings/
+scalaLibTest/target/
