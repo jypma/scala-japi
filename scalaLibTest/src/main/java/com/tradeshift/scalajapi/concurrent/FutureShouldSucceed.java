@@ -10,7 +10,7 @@ public class FutureShouldSucceed extends BasicErrorMessageFactory {
     }
 
     public static <T> FutureShouldSucceed shouldSucceed(T actual, T expectedValue) {
-        return new FutureShouldSucceed("%nExpected Future to succeed with %s, but was %s.", actual, expectedValue);
+        return new FutureShouldSucceed("%nExpected Future to succeed with %s, but was %s.", expectedValue, actual);
     }
     
     public static <T> FutureShouldSucceed shouldSucceed(Throwable exception, T expectedValue) {
