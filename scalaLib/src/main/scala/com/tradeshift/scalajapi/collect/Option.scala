@@ -21,7 +21,7 @@ object Option {
    * IllegalArgumentException if the iterable turns out to have more than 
    * one result.
    */
-  def of[T](iterable: java.lang.Iterable[T]): Option[T] = {
+  def ofOne[T](iterable: java.lang.Iterable[T]): Option[T] = {
     val i = iterable.iterator()
     if (i.hasNext()) {
       val value = Option.of(i.next())
