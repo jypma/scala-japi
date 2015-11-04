@@ -68,7 +68,7 @@ public class AbstractFutureAssert<S extends AbstractFutureAssert<S, T>, T> exten
         return myself;
     }
     
-    public AbstractObjectAssert<?, T> result() {
+    public AbstractObjectAssert<?, T> success() {
         isNotNull();
         T value = null;
         try {
@@ -89,6 +89,8 @@ public class AbstractFutureAssert<S extends AbstractFutureAssert<S, T>, T> exten
             if (!optionalValueComparisonStrategy.areEqual(value, expectedValue)) throwAssertionError(shouldSucceed(value, expectedValue));
         } catch (TimeoutException x) {
             throwAssertionError(shouldCompleteWithin(actual, timeout));
+        } catch (AssertionError error) {
+            throw error;
         } catch (Throwable x) {
             throwAssertionError(shouldSucceed(x, expectedValue));
         }

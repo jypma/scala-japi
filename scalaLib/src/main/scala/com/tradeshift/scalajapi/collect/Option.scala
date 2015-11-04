@@ -49,7 +49,7 @@ object Option {
   }
 }
 
-class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Iterable[T] {
+case class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Iterable[T] {
   import Option._
   
   def get:T = unwrap.get
