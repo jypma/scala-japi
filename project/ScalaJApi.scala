@@ -5,7 +5,7 @@ import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 object ScalaJApi extends Build {
   lazy val commonSettings = Seq(
     organization := "com.tradeshift.scala-japi",
-    version := "0.1-201511041419",
+    version := "0.1-201511191609",
     scalaVersion := "2.11.7",
     scalacOptions ++= "-deprecation" :: "-feature" :: "-target:jvm-1.8" :: Nil,
     licenses := Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
