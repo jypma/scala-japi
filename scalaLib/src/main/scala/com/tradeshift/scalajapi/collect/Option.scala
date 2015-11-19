@@ -82,7 +82,7 @@ case class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Ite
           Spliterators.spliterator(iterator, size, Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.IMMUTABLE),
           false);
   
-  override def iterator = new java.util.Iterator[T] {
+  override def iterator: java.util.Iterator[T] = new java.util.Iterator[T] {
     val i = unwrap.iterator
     override def hasNext = i.hasNext
     override def next = i.next

@@ -90,7 +90,7 @@ case class Map[K,V] private (val unwrap: immutable.Map[K,V]) extends java.lang.I
   
   def valuesToSeq: Seq[V] = Seq.wrap(unwrap.values.toVector)
   
-  override def iterator = new java.util.Iterator[(K,V)] {
+  override def iterator: java.util.Iterator[(K,V)] = new java.util.Iterator[(K,V)] {
     val i = unwrap.iterator
     override def hasNext = i.hasNext
     override def next = i.next
