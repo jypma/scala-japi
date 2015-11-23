@@ -19,6 +19,15 @@ object SortedSet {
   def empty[T <: Comparable[T]]: SortedSet[T] = wrap(immutable.SortedSet.empty)
   
   def of[T <: Comparable[T]](t1: T): SortedSet[T] = wrap(immutable.SortedSet(t1))
+  def of[T <: Comparable[T]](t1: T, t2:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T, t5:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4,t5))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T, t5:T, t6:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4,t5,t6))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T, t5:T, t6:T, t7:T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4,t5,t6,t7))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T, t5:T, t6:T, t7:T, t8: T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4,t5,t6,t7,t8))
+  def of[T <: Comparable[T]](t1: T, t2:T, t3:T, t4:T, t5:T, t6:T, t7:T, t8: T, t9: T): SortedSet[T] = wrap(immutable.SortedSet(t1,t2,t3,t4,t5,t6,t7,t8,t9))
+  
   
   def ofAll[T <: Comparable[T]](items: java.lang.Iterable[T]): SortedSet[T] = wrap(immutable.SortedSet.empty[T] ++ items.asScala)
   
@@ -71,6 +80,12 @@ case class SortedSet[T] private (val unwrap: immutable.SortedSet[T]) extends jav
   def asStream: java.util.stream.Stream[T] = StreamSupport.stream(
           Spliterators.spliterator(iterator, size, Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.IMMUTABLE),
           false);
+  
+  def foreach(f: java.util.function.Consumer[T]) = unwrap.foreach(f.accept)
+  
+  def exists(p: java.util.function.Predicate[T]): Boolean = unwrap.exists(p.test)
+  
+  def forall(p: java.util.function.Predicate[T]): Boolean = unwrap.forall(p.test)
   
   override def iterator: java.util.Iterator[T] = new java.util.Iterator[T] {
     val i = unwrap.iterator

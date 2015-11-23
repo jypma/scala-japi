@@ -13,11 +13,13 @@ object ScalaJApi extends Build {
     EclipseKeys.withSource := true
   )
 
-  lazy val akkaStreams = project.settings(commonSettings: _*)
-  
   lazy val scalaLib = project.settings(commonSettings: _*)
+  
+  lazy val akkaStreams = project.settings(commonSettings: _*).dependsOn(scalaLib)
+  
+  lazy val akkaStreamsTest = project.settings(commonSettings: _*).dependsOn(akkaStreams)
   
   lazy val scalaLibTest = project.settings(commonSettings: _*).dependsOn(scalaLib)
   
-  lazy val tests = project.settings(commonSettings: _*).dependsOn(scalaLib, akkaStreams)
+  lazy val tests = project.settings(commonSettings: _*).dependsOn(scalaLib, akkaStreams, akkaStreamsTest, scalaLibTest)
 }

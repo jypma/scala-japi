@@ -90,6 +90,12 @@ case class Map[K,V] private (val unwrap: immutable.Map[K,V]) extends java.lang.I
   
   def valuesToSeq: Seq[V] = Seq.wrap(unwrap.values.toVector)
   
+  def foreach(f: java.util.function.BiConsumer[K,V]) = unwrap.foreach { case (k,v) => f.accept(k,v) }
+  
+  def exists(p: java.util.function.BiPredicate[K,V]): Boolean = unwrap.exists { case (k,v) => p.test(k,v) }
+  
+  def forall(p: java.util.function.BiPredicate[K,V]): Boolean = unwrap.forall { case (k,v) => p.test(k,v) }
+  
   override def iterator: java.util.Iterator[(K,V)] = new java.util.Iterator[(K,V)] {
     val i = unwrap.iterator
     override def hasNext = i.hasNext

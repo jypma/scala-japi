@@ -54,13 +54,13 @@ case class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Ite
   
   def get:T = unwrap.get
   
-  def getOrElse[T1 >: T](f: java.util.function.Supplier[T1]): T1 = unwrap.getOrElse(f.get())
+  def getOrElse(f: java.util.function.Supplier[_ <: T]): T = unwrap.getOrElse(f.get())
   
-  def orElse[T1 >: T](f: java.util.function.Supplier[Option[T1]]): Option[T1] = wrap(unwrap.orElse(f.get().unwrap))
+  def orElse(f: java.util.function.Supplier[Option[_ <: T]]): Option[T] = wrap(unwrap.orElse(f.get().unwrap))
   
   def orNull = getOrElse(null)
   
-  def filter(p: java.util.function.Predicate[T]): Option[T] = wrap(unwrap.filter(p.test))
+  def filter(p: java.util.function.Predicate[_ >: T]): Option[T] = wrap(unwrap.filter(p.test))
   
   def size:Int = unwrap.size
   
@@ -82,6 +82,12 @@ case class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Ite
           Spliterators.spliterator(iterator, size, Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.IMMUTABLE),
           false);
   
+  def foreach(f: java.util.function.Consumer[T]) = unwrap.foreach(f.accept)
+  
+  def exists(p: java.util.function.Predicate[T]): Boolean = unwrap.exists(p.test)
+
+  def forall(p: java.util.function.Predicate[T]): Boolean = unwrap.forall(p.test)
+
   override def iterator: java.util.Iterator[T] = new java.util.Iterator[T] {
     val i = unwrap.iterator
     override def hasNext = i.hasNext
