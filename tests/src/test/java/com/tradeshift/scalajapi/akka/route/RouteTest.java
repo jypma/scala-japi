@@ -235,7 +235,7 @@ public class RouteTest extends RouteTestKit {
                 )
             ),
             path("notreally", () ->
-                rejectWith(new MissingFormFieldRejection("always failing"))
+                rejectWith(Rejections.missingFormField("always failing"))
             ),
             path("shouldnotfail", () ->
                 handleExceptions(xHandler, () ->
