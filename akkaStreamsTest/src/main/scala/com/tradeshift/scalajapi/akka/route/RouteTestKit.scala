@@ -19,14 +19,52 @@ import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.ResponseEntity
 import akka.http.javadsl.model.HttpCharset
 import akka.http.javadsl.model.StatusCode
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 class RouteTestKit {
+  outer =>
+  
   private trait Runner {
     def run(request: HttpRequest, route: Route, checks: => Unit)
   }
   
+  /**
+   * Literal configuration that will be applied to the actor system that is instantiated
+   * for this test class. Override this if you want to add a few settings to an otherwise-
+   * valid application.conf or reference.conf.
+   * 
+   * The default implementation of testConfig() will call this method
+   * and combine the result with ConfigFactory.load() as fallback.
+   * 
+   * This method must not refer to any instance fields, since it is invoked by 
+   * RouteTestKit's constructor.  
+   */
+  def testConfigSource = "" 
+  
+  /**
+   * Returns the Config to be used for the actor system that is instantiated
+   * for this test class.
+   * 
+   * Override this method if you want to have a completely custom Config for the 
+   * route under test.
+   * 
+   * The default implementation will call this testConfigSource() 
+   * and combine the result with ConfigFactory.load() as fallback.
+   * 
+   * This method must not refer to any instance fields, since it is invoked by 
+   * RouteTestKit's constructor.  
+   */
+  def testConfig: Config = {
+    val source = testConfigSource
+    val config = if (source.isEmpty) ConfigFactory.empty() else ConfigFactory.parseString(source)
+    config.withFallback(ConfigFactory.load())
+  }
+  
   private val kit = new RouteTest with TestFrameworkInterface with Runner {
     override def failTest(msg:String): Nothing = throw new AssertionError(msg)
+    
+    override def testConfig = outer.testConfig
     
     def run(request: HttpRequest, route: Route, checks: => Unit) {
       request.asInstanceOf[akka.http.scaladsl.model.HttpRequest] ~> route.toScala ~> check {
