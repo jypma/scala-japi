@@ -6,7 +6,8 @@ abstract class AllDirectives extends PathDirectives
                                 with BasicDirectives 
                                 with FutureDirectives 
                                 with MarshallingDirectives 
-                                with ExecutionDirectives 
+                                with ExecutionDirectives
+                                with HeaderDirectives
                                 with MethodDirectives {
   
 }

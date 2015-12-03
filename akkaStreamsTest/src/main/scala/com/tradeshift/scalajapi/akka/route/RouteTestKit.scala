@@ -86,6 +86,8 @@ class RouteTestKit {
   
   def handled:Boolean = kit.handled
   def rejections:Seq[Rejection] = Seq.wrap(kit.rejections)
+  def rejection:Rejection = kit.rejection
+  
   def response:HttpResponse = kit.response
   def responseEntity:HttpEntity = kit.responseEntity
   def chunks:Seq[ChunkStreamPart] = Seq.wrap(kit.chunks)
@@ -96,4 +98,22 @@ class RouteTestKit {
   def headers:Seq[HttpHeader] = Seq.wrap(kit.headers)
   def header[T <: akka.http.scaladsl.model.HttpHeader](c:Class[T]):Option[T] = Option.wrap(kit.header[T](ClassTag(c)))
   def status:StatusCode = kit.status
+  
+  // --- extra non-wrapped methods to make Java API just a little nicer ---
+  /** 
+   * Returns a single expected rejection, verifying that is indeed an instance of T.  
+   */
+  def rejection[T <: Rejection](t: Class[T]): T = {
+    val r = rejection
+    if (t.isInstance(r)) r.asInstanceOf[T] else kit.failTest("Expected a rejection of type %s but got %s".format(t.getSimpleName, r))
+  }
+  /**
+   * Returns whether the request was rejected by the route
+   */
+  def isRejected:Boolean = { kit.rejections; true }
+  /**
+   * Returns whether the request was rejected by the route as an empty rejection list
+   * (see http://doc.akka.io/docs/akka-stream-and-http-experimental/snapshot/scala/http/routing-dsl/rejections.html#Empty_Rejections
+   */
+  def isEmptyRejected: Boolean = rejections.isEmpty
 }

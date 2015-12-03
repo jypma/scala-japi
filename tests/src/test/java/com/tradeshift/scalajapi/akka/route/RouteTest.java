@@ -15,14 +15,18 @@ import java.util.regex.Matcher;
 
 import org.junit.Test;
 
+import scala.PartialFunction;
 import scala.concurrent.ExecutionContext;
 
+import com.tradeshift.scalajapi.collect.Option;
 import com.tradeshift.scalajapi.collect.Seq;
 import com.tradeshift.scalajapi.concurrent.Future;
 
+import akka.http.impl.util.Rendering;
 import akka.http.javadsl.model.ContentType;
 import akka.http.javadsl.model.HttpCharsets;
 import akka.http.javadsl.model.HttpEntity;
+import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.MediaRanges;
@@ -32,6 +36,9 @@ import akka.http.javadsl.model.RequestEntity;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Accept;
 import akka.http.javadsl.model.headers.RawHeader;
+import akka.http.scaladsl.model.headers.CustomHeader;
+import akka.http.scaladsl.server.MalformedHeaderRejection;
+import akka.http.scaladsl.server.MissingHeaderRejection;
 import akka.http.scaladsl.server.MissingQueryParamRejection;
 import akka.http.scaladsl.server.MissingFormFieldRejection;
 import akka.http.scaladsl.server.Rejection;
@@ -91,6 +98,44 @@ public class RouteTest extends RouteTestKit {
         Marshaller.entityToResponse(
         Marshaller.wrapEntity(Marshaller.byteStringToEntity(), ContentType.create(xmlType), 
             (UUID u) -> ByteString.fromString("<id>" + u + "</id>")));
+    }
+    
+    private static boolean isUUID(String s) {
+        try {
+            UUID.fromString(s);
+            return true;
+        } catch (IllegalArgumentException x) {
+            return false;
+        }
+    }
+    
+    private static class UUIDHeader extends CustomHeader {
+        public static Route extractValue(Function<UUIDHeader, Route> inner) {
+            return headerValueByName("UUID", value -> {
+                return isUUID(value) ? inner.apply(new UUIDHeader(UUID.fromString(value))) 
+                                     : rejectWith(Rejections.malformedHeader("UUID", "must be a valid UUID"));
+            });
+        }
+        
+        private final UUID value;
+        
+        public UUIDHeader(UUID value) {
+            this.value = value;
+        }
+
+        @Override
+        public String name() {
+            return "UUID";
+        }
+
+        @Override
+        public String value() {
+            return value.toString();
+        }
+        
+        public UUID uuid() {
+            return value;
+        }
     }
     
     private final Marshaller<UUID, HttpResponse> UUID_TO_BODY = Marshaller.oneOf(
@@ -197,11 +242,8 @@ public class RouteTest extends RouteTestKit {
     @Test
     public void request_is_rejected_if_no_marshaller_fits_accepted_type() {
         on(HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.TEXT_PLAIN))), route, () -> {
-            assertThat(rejections()).hasSize(1);
-            Rejection rejection = rejections().get(0);
-            assertThat(rejection).isInstanceOf(UnacceptedResponseContentTypeRejection.class);
+            assertThat(rejection(UnacceptedResponseContentTypeRejection.class)).isNotNull();
         });                
-        
     }
     
     @Test
@@ -209,6 +251,34 @@ public class RouteTest extends RouteTestKit {
         on(HttpRequest.GET("/shouldnotfail"), route, () -> {
             assertThat(responseEntityStrict().data().utf8String()).isEqualTo("no problem!");            
         });        
+    }
+    
+    @Test
+    public void route_with_required_header_fails_when_header_is_absent() {
+        on(HttpRequest.GET("/requiredheader"), route, () -> {
+            assertThat(rejection(MissingHeaderRejection.class).headerName()).isEqualTo("UUID");            
+        });                
+    }
+    
+    @Test
+    public void route_with_required_header_fails_when_header_is_malformed() {
+        on(HttpRequest.GET("/requiredheader").addHeader(RawHeader.create("UUID", "monkeys")), route, () -> {
+            assertThat(rejection(MalformedHeaderRejection.class).headerName()).isEqualTo("UUID");            
+        });                        
+    }
+    
+    @Test
+    public void route_with_required_header_succeeds_when_header_is_present_as_RawHeader() {
+        on(HttpRequest.GET("/requiredheader").addHeader(RawHeader.create("UUID", "98610fcb-7b19-4639-8dfa-08db8ac19320")), route, () -> {
+            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
+        });                        
+    }
+    
+    @Test
+    public void route_with_required_header_succeeds_when_header_is_present_as_custom_type() {
+        on(HttpRequest.GET("/requiredheader").addHeader(new UUIDHeader(UUID.fromString("98610fcb-7b19-4639-8dfa-08db8ac19320"))), route, () -> {
+            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
+        });                                
     }
     
     private static ExceptionHandler xHandler = ExceptionHandler.of(
@@ -281,6 +351,11 @@ public class RouteTest extends RouteTestKit {
             path("cakes", () ->
                 param(BIG_DECIMAL_PARAM, "amount", amount -> 
                     complete("cakes " + amount)
+                )
+            ),
+            path("requiredheader", () ->
+                UUIDHeader.extractValue(h -> 
+                    complete("has header: " + h.uuid())
                 )
             )
         );
