@@ -33,6 +33,7 @@ import akka.http.javadsl.model.MediaRanges;
 import akka.http.javadsl.model.MediaType;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.RequestEntity;
+import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Accept;
 import akka.http.javadsl.model.headers.RawHeader;
@@ -85,20 +86,31 @@ public class RouteTest extends RouteTestKit {
         Unmarshaller.firstOf(UUID_FROM_JSON_BODY, UUID_FROM_XML_BODY);
     
     private final Marshaller<UUID, RequestEntity> UUID_TO_RQ = Marshaller.wrapEntity(
+        (UUID u) -> "{\"id\":\"" + u + "\"}",
         Marshaller.stringToEntity(), 
-        ContentType.create(MediaTypes.APPLICATION_JSON), 
-        (UUID u) -> "{\"id\":\"" + u + "\"}");
+        ContentType.create(MediaTypes.APPLICATION_JSON) 
+    );
     
-    private final Marshaller<UUID, HttpResponse> UUID_TO_JSON_BODY =
-        Marshaller.entityToResponse(
-        Marshaller.wrapEntity(Marshaller.stringToEntity(), ContentType.create(MediaTypes.APPLICATION_JSON), 
-            (UUID u) -> "{\"id\":\"" + u + "\"}"));
+    private final Marshaller<UUID, RequestEntity> UUID_TO_JSON = Marshaller.wrapEntity(
+        (UUID u) -> "{\"id\":\"" + u + "\"}",
+        Marshaller.stringToEntity(), 
+        ContentType.create(MediaTypes.APPLICATION_JSON) 
+    );
     
-    private final Marshaller<UUID, HttpResponse> UUID_TO_XML_BODY(MediaType xmlType) { return
-        Marshaller.entityToResponse(
-        Marshaller.wrapEntity(Marshaller.byteStringToEntity(), ContentType.create(xmlType), 
-            (UUID u) -> ByteString.fromString("<id>" + u + "</id>")));
+    private final Marshaller<UUID, RequestEntity> UUID_TO_XML(MediaType xmlType) { 
+        return Marshaller.wrapEntity(
+            (UUID u) -> ByteString.fromString("<id>" + u + "</id>"), 
+            Marshaller.byteStringToEntity(), 
+            ContentType.create(xmlType) 
+        );
     }
+    
+    private final Marshaller<UUID, RequestEntity> UUID_TO_ENTITY = 
+        Marshaller.oneOf(
+            UUID_TO_JSON,
+            UUID_TO_XML(MediaTypes.APPLICATION_XML),
+            UUID_TO_XML(MediaTypes.TEXT_XML)
+        );
     
     private static boolean isUUID(String s) {
         try {
@@ -137,11 +149,6 @@ public class RouteTest extends RouteTestKit {
             return value;
         }
     }
-    
-    private final Marshaller<UUID, HttpResponse> UUID_TO_BODY = Marshaller.oneOf(
-        UUID_TO_JSON_BODY,
-        UUID_TO_XML_BODY(MediaTypes.APPLICATION_XML),
-        UUID_TO_XML_BODY(MediaTypes.TEXT_XML));
     
     @Test
     public void path_can_match_uuid() {
@@ -247,6 +254,14 @@ public class RouteTest extends RouteTestKit {
     }
     
     @Test
+    public void first_marshaller_is_picked_and_status_code_applied_if_no_accept_header_present() {
+        on(HttpRequest.GET("/uuid"), route, () -> {
+            assertThat(contentType().mediaType()).isEqualTo(MediaTypes.APPLICATION_JSON);
+            assertThat(status()).isEqualTo(StatusCodes.FOUND);            
+        });        
+    }
+    
+    @Test
     public void exception_handlers_are_applied_even_if_the_route_throws_in_future() {
         on(HttpRequest.GET("/shouldnotfail"), route, () -> {
             assertThat(responseEntityStrict().data().utf8String()).isEqualTo("no problem!");            
@@ -345,7 +360,7 @@ public class RouteTest extends RouteTestKit {
                 ),
                 get(() -> {
                     UUID id = UUID.fromString("80a05eee-652e-4458-9bee-19b69dbe1dee");
-                    return complete(id, UUID_TO_BODY);
+                    return complete(StatusCodes.FOUND, id, UUID_TO_ENTITY);
                 })
             )),
             path("cakes", () ->

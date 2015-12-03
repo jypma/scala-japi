@@ -22,8 +22,10 @@ package object route {
     j.asInstanceOf[S]
   implicit def toScala[J,S](seq: Seq[J])(implicit c:TypeEquivalent[J,S]): Seq[S] = 
     seq.asInstanceOf[Seq[S]]
-  implicit def toScala[J,S](seq: Set[J])(implicit c:TypeEquivalent[J,S]): Set[S] = 
-    seq.asInstanceOf[Set[S]]
+  implicit def toScala[J,S](set: Set[J])(implicit c:TypeEquivalent[J,S]): Set[S] = 
+    set.asInstanceOf[Set[S]]
+  implicit def toScala[J,S](seq: collection.immutable.Seq[J])(implicit c:TypeEquivalent[J,S]): collection.immutable.Seq[S] = 
+    seq.asInstanceOf[collection.immutable.Seq[S]]
   implicit def toJava[JI,SI,O,M](flow: akka.stream.scaladsl.Flow[SI,O,M])(implicit c1:TypeEquivalent[JI,SI]) =
     flow.asInstanceOf[akka.stream.scaladsl.Flow[JI,O,M]]
   
@@ -44,6 +46,7 @@ package object route {
   implicit val javaToScalaHttpEncoding = TypeEquivalent[javadsl.model.headers.HttpEncoding, scaladsl.model.headers.HttpEncoding]
   implicit val javaToScalaByteRange = TypeEquivalent[javadsl.model.headers.ByteRange, scaladsl.model.headers.ByteRange]
   implicit val javaToScalaHttpChallenge = TypeEquivalent[javadsl.model.headers.HttpChallenge, scaladsl.model.headers.HttpChallenge]
+  implicit val javaToScalaHttpHeader = TypeEquivalent[javadsl.model.HttpHeader, scaladsl.model.HttpHeader]
   
   // not made implicit since it's a subtype
   val javaToScalaHttpEntity = TypeEquivalent[javadsl.model.HttpEntity, scaladsl.model.HttpEntity]

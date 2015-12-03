@@ -13,6 +13,9 @@ import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.RequestEntity
 import akka.util.ByteString
 import akka.http.scaladsl.model.FormData
+import akka.http.javadsl.model.StatusCode
+import akka.http.javadsl.model.HttpHeader
+import com.tradeshift.scalajapi.collect.Seq
 
 object Marshaller {
   def wrap[A,B](scalaMarshaller: marshalling.Marshaller[A,B]) = Marshaller()(scalaMarshaller)
@@ -43,34 +46,46 @@ object Marshaller {
   
   def fromDataToEntity: Marshaller[FormData,RequestEntity] = wrap(marshalling.Marshaller.FormDataMarshaller)
   
-  def wrapEntity[A,C](m: Marshaller[A,_ <: RequestEntity], contentType: ContentType, f:function.BiFunction[ExecutionContext,C,A]): Marshaller[C,RequestEntity] = {
+  def wrapEntity[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,_ <: RequestEntity], contentType: ContentType): Marshaller[C,RequestEntity] = {
     val scalaMarshaller = toScala(downcast(m, classOf[RequestEntity]).unwrap)
     wrap(scalaMarshaller.wrapWithEC(contentType) { ctx => c:C => f(ctx,c) } ) 
   }
 
-  def wrapEntity[A,C](m: Marshaller[A,_ <: RequestEntity], contentType: ContentType, f:function.Function[C,A]): Marshaller[C,RequestEntity] = {
+  def wrapEntity[A,C](f:function.Function[C,A], m: Marshaller[A,_ <: RequestEntity], contentType: ContentType): Marshaller[C,RequestEntity] = {
     val scalaMarshaller = toScala(downcast(m, classOf[RequestEntity]).unwrap)
     wrap(scalaMarshaller.wrap(contentType)(f.apply)) 
   }
 
-  def wrapResponse[A,C](m: Marshaller[A,HttpResponse], contentType: ContentType, f:function.BiFunction[ExecutionContext,C,A]): Marshaller[C,HttpResponse] = {
+  def wrapResponse[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,HttpResponse], contentType: ContentType): Marshaller[C,HttpResponse] = {
     wrap(toScala(m.unwrap).wrapWithEC(contentType) { ctx => c:C => f(ctx,c) }) 
   }
   
-  def wrapResponse[A,C](m: Marshaller[A,HttpResponse], contentType: ContentType, f:function.Function[C,A]): Marshaller[C,HttpResponse] = {
+  def wrapResponse[A,C](f:function.Function[C,A], m: Marshaller[A,HttpResponse], contentType: ContentType): Marshaller[C,HttpResponse] = {
     wrap(toScala(m.unwrap).wrap(contentType)(f.apply)) 
   }
   
-  def wrapRequest[A,C](m: Marshaller[A,HttpRequest], contentType: ContentType, f:function.BiFunction[ExecutionContext,C,A]): Marshaller[C,HttpRequest] = {
+  def wrapRequest[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,HttpRequest], contentType: ContentType): Marshaller[C,HttpRequest] = {
     wrap(toScala(m.unwrap).wrapWithEC(contentType) { ctx => c:C => f(ctx,c) }) 
   }
   
-  def wrapRequest[A,C](m: Marshaller[A,HttpRequest], contentType: ContentType, f:function.Function[C,A]): Marshaller[C,HttpRequest] = {
+  def wrapRequest[A,C](f:function.Function[C,A], m: Marshaller[A,HttpRequest], contentType: ContentType): Marshaller[C,HttpRequest] = {
     wrap(toScala(m.unwrap).wrap(contentType)(f.apply)) 
   }
   
-  def entityToResponse[A](m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {
+  def entityToOKResponse[A](m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {
     wrap(marshalling.Marshaller.fromToEntityMarshaller[A]()(m.unwrap))
+  }
+  
+  def entityToResponse[A](status: StatusCode, m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {
+    wrap(marshalling.Marshaller.fromToEntityMarshaller[A](status)(m.unwrap))
+  }
+  
+  def entityToResponse[A](status: StatusCode, headers: Seq[HttpHeader], m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {
+    wrap(marshalling.Marshaller.fromToEntityMarshaller[A](status, headers.unwrap)(m.unwrap))
+  }
+  
+  def entityToOKResponse[A](headers: Seq[HttpHeader], m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {
+    wrap(marshalling.Marshaller.fromToEntityMarshaller[A](headers = headers.unwrap)(m.unwrap))
   }
   
   def oneOf[A, B] (m1: Marshaller[A, B], m2: Marshaller[A, B]): Marshaller[A, B] = {
@@ -91,5 +106,9 @@ object Marshaller {
 }
 
 case class Marshaller[A,B] private (implicit val unwrap: marshalling.Marshaller[A,B]) {
+  import Marshaller.wrap
   
+  def map[C](f: function.Function[B,C]): Marshaller[A,C] = wrap(unwrap.map(f.apply))
+  
+  def compose[C](f: function.Function[C,A]): Marshaller[C,B] = wrap(unwrap.compose(f.apply))
 }

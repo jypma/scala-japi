@@ -9,6 +9,11 @@ import scala.annotation.varargs
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.marshalling.Marshaller._
+import akka.http.javadsl.model.HttpHeader
+import akka.http.javadsl.model.RequestEntity
+import com.tradeshift.scalajapi.collect.Seq
 
 trait RouteDirectives {
   /**
@@ -39,9 +44,23 @@ trait RouteDirectives {
     D.complete(status: scaladsl.model.StatusCode)
   )
   
-  def complete[T](value: T, marshaller: Marshaller[T,HttpResponse]) = {
-    ScalaRoute(
-      D.complete(ToResponseMarshallable(value)(marshaller.unwrap))
-    )
+  def complete[T](value: T, marshaller: Marshaller[T,HttpResponse]) = ScalaRoute {
+    D.complete(ToResponseMarshallable(value)(marshaller.unwrap))
+  }
+  
+  def complete[T](status: StatusCode, headers: Seq[HttpHeader], value: T, marshaller: Marshaller[T,RequestEntity]) = ScalaRoute {
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status, headers.unwrap)(marshaller.unwrap)))
+  }
+  
+  def complete[T](status: StatusCode, value: T, marshaller: Marshaller[T,RequestEntity]) = ScalaRoute {
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status)(marshaller.unwrap)))
+  }
+  
+  def complete[T](headers: Seq[HttpHeader], value: T, marshaller: Marshaller[T,RequestEntity]) = ScalaRoute {
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = headers.unwrap)(marshaller.unwrap)))
+  }
+  
+  def completeOK[T](value: T, marshaller: Marshaller[T,RequestEntity]) = ScalaRoute {
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller()(marshaller.unwrap)))
   }
 }
