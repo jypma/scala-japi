@@ -48,6 +48,8 @@ object Seq {
 case class Seq[T] private (val unwrap: immutable.Seq[T]) extends java.lang.Iterable[T] {
   import Seq._
 
+  def contains(item: T): Boolean = unwrap.contains(item)
+  
   def filter(p: java.util.function.Predicate[T]): Seq[T] = wrap(unwrap.filter(p.test))
   
   def size:Int = unwrap.size

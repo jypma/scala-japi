@@ -37,6 +37,8 @@ object Map {
 case class Map[K,V] private (val unwrap: immutable.Map[K,V]) extends java.lang.Iterable[(K,V)] {
   import Map._
   
+  def contains(key: K): Boolean = unwrap.contains(key)
+  
   def filter(p: java.util.function.BiPredicate[K,V]): Map[K,V] = wrap(unwrap.filter(e => p.test(e._1,e._2)))
   
   def size:Int = unwrap.size

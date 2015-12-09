@@ -45,6 +45,8 @@ object Set {
 case class Set[T] private (val unwrap: immutable.Set[T]) extends java.lang.Iterable[T] {
   import Set._
   
+  def contains(item: T): Boolean = unwrap.contains(item)
+  
   def filter(p: java.util.function.Predicate[T]): Set[T] = wrap(unwrap.filter(p.test))
   
   def size:Int = unwrap.size
