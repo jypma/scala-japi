@@ -5,7 +5,7 @@ import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 object ScalaJApi extends Build {
   lazy val commonSettings = Seq(
     organization := "com.tradeshift.scala-japi",
-    version := "0.1-201511191609",
+    version := "0.1-201512031534",
     scalaVersion := "2.11.7",
     scalacOptions ++= "-deprecation" :: "-feature" :: "-target:jvm-1.8" :: Nil,
     licenses := Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
@@ -13,11 +13,13 @@ object ScalaJApi extends Build {
     EclipseKeys.withSource := true
   )
 
-  lazy val akkaStreams = project.settings(commonSettings: _*)
-  
   lazy val scalaLib = project.settings(commonSettings: _*)
+  
+  lazy val akkaStreams = project.settings(commonSettings: _*).dependsOn(scalaLib)
+  
+  lazy val akkaStreamsTest = project.settings(commonSettings: _*).dependsOn(akkaStreams)
   
   lazy val scalaLibTest = project.settings(commonSettings: _*).dependsOn(scalaLib)
   
-  lazy val tests = project.settings(commonSettings: _*).dependsOn(scalaLib, akkaStreams)
+  lazy val tests = project.settings(commonSettings: _*).dependsOn(scalaLib, akkaStreams, akkaStreamsTest, scalaLibTest)
 }

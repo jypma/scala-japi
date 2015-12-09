@@ -22,3 +22,10 @@ scalaLibTest/.gitignore
 scalaLibTest/.project
 scalaLibTest/.settings/
 scalaLibTest/target/
+akkaStreamsTest/.cache-main
+akkaStreamsTest/.classpath
+akkaStreamsTest/.gitignore
+akkaStreamsTest/.project
+akkaStreamsTest/.settings/
+tests/.cache-tests
+tests/bin/
