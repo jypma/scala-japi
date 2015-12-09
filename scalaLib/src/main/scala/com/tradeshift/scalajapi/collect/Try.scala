@@ -44,4 +44,6 @@ case class Try[T] private (val unwrap: STry[T]) {
   def transform[U](successFunc: java.util.function.Function[T,Try[U]], 
                    failureFunc: java.util.function.Function[Throwable,Try[U]]) = 
      wrap(unwrap.transform(s => successFunc(s).unwrap, f => failureFunc(f).unwrap))
+     
+  override def toString: String = unwrap.toString
 }

@@ -49,6 +49,8 @@ object SortedSet {
 case class SortedSet[T] private (val unwrap: immutable.SortedSet[T]) extends java.lang.Iterable[T] {
   import SortedSet._
   
+  def contains(item: T): Boolean = unwrap.contains(item)
+  
   def filter(p: java.util.function.Predicate[T]): SortedSet[T] = wrap(unwrap.filter(p.test))
   
   def size:Int = unwrap.size
@@ -92,4 +94,6 @@ case class SortedSet[T] private (val unwrap: immutable.SortedSet[T]) extends jav
     override def hasNext = i.hasNext
     override def next = i.next
   }
+
+  override def toString: String = unwrap.toString
 }

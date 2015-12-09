@@ -27,6 +27,8 @@ object Either {
     def toOption: Option[L] = Option.wrap(unwrap.toOption)
     
     def toSeq: Seq[L] = Seq.wrap(unwrap.toSeq.toVector)
+    
+    override def toString: String = unwrap.toString    
   }
   
   case class RightProjection[L,R] private[collect] (unwrap: scala.util.Either.RightProjection[L,R]) {
@@ -53,6 +55,8 @@ object Either {
     def toOption: Option[R] = Option.wrap(unwrap.toOption)
     
     def toSeq: Seq[R] = Seq.wrap(unwrap.toSeq.toVector)
+    
+    override def toString: String = unwrap.toString
   }    
 }
 
@@ -77,5 +81,7 @@ case class Either[L,R] private (unwrap: scala.util.Either[L,R]) {
     unwrap.fold(fa.apply, fb.apply) 
     
   def swap: Either[R,L] = wrap(unwrap.swap)
+  
+  override def toString: String = unwrap.toString
 }
 
