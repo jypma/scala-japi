@@ -94,4 +94,6 @@ case class SortedSet[T] private (val unwrap: immutable.SortedSet[T]) extends jav
     override def hasNext = i.hasNext
     override def next = i.next
   }
+
+  override def toString: String = unwrap.toString
 }

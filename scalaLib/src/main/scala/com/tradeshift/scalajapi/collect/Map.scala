@@ -102,5 +102,7 @@ case class Map[K,V] private (val unwrap: immutable.Map[K,V]) extends java.lang.I
     val i = unwrap.iterator
     override def hasNext = i.hasNext
     override def next = i.next
-  }  
+  }
+  
+  override def toString: String = unwrap.toString  
 }

@@ -131,5 +131,7 @@ case class Seq[T] private (val unwrap: immutable.Seq[T]) extends java.lang.Itera
     override def hasNext = i.hasNext
     override def next = i.next
   }
+  
+  override def toString: String = unwrap.toString
 }
  

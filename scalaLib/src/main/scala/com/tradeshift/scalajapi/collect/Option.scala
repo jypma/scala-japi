@@ -93,4 +93,6 @@ case class Option[T] private (val unwrap: scala.Option[T]) extends java.lang.Ite
     override def hasNext = i.hasNext
     override def next = i.next
   }  
+  
+  override def toString: String = unwrap.toString
 }
