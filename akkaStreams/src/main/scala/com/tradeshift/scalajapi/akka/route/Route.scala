@@ -9,11 +9,12 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.http.scaladsl.server.Directives._
 import scala.annotation.varargs
+import akka.NotUsed
 
 trait Route {
   private[route] def toScala: SRoute
   
-  def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, Unit]
+  def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed]
   def seal(system: ActorSystem, materializer: Materializer): Route
   def orElse(alternative: Route): Route
 }

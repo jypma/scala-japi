@@ -20,7 +20,7 @@ trait RouteDirectives {
    * Java-specific call added so you can chain together multiple alternate routes using comma,
    * rather than having to explicitly call route1.orElse(route2).orElse(route3).
    */
-  @varargs def route(alternatives: Route*) = ScalaRoute(
+  @varargs def route(alternatives: Route*): Route = ScalaRoute(
     alternatives.map(_.toScala).reduce(_ ~ _)
   )
   

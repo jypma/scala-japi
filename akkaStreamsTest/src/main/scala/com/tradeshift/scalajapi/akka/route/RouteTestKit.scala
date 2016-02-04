@@ -5,17 +5,16 @@ import com.tradeshift.scalajapi.collect.Option
 import akka.http.scaladsl.testkit.RouteTest
 import akka.http.scaladsl.testkit.TestFrameworkInterface
 import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.model.HttpEntityStrict
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.http.javadsl.model.HttpEntity
-import akka.http.javadsl.model.ChunkStreamPart
 import akka.http.javadsl.model.HttpHeader
 import scala.reflect.ClassTag
 import akka.http.scaladsl.server.Rejection
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.MediaType
 import akka.http.javadsl.model.HttpResponse
+import akka.http.javadsl.model.HttpEntity.ChunkStreamPart
 import akka.http.javadsl.model.ResponseEntity
 import akka.http.javadsl.model.HttpCharset
 import akka.http.javadsl.model.StatusCode
@@ -94,7 +93,7 @@ class RouteTestKit {
   def contentType:ContentType = kit.contentType
   def mediaType:MediaType = kit.mediaType
   def charset:HttpCharset = kit.charset
-  def responseEntityStrict:HttpEntityStrict = Await.result(kit.response.entity.toStrict(3.seconds), 3.seconds)
+  def responseEntityStrict:HttpEntity.Strict = Await.result(kit.response.entity.toStrict(3.seconds), 3.seconds)
   def headers:Seq[HttpHeader] = Seq.wrap(kit.headers)
   def header[T <: akka.http.scaladsl.model.HttpHeader](c:Class[T]):Option[T] = Option.wrap(kit.header[T](ClassTag(c)))
   def status:StatusCode = kit.status

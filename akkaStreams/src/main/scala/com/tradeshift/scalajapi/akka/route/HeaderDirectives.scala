@@ -33,7 +33,7 @@ trait HeaderDirectives {
   }
   
   def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = ScalaRoute {
-    D.headerValueByType(ClassMagnet(t).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
+    D.headerValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
       inner.apply(value.asInstanceOf[T]).toScala
     }
   }
@@ -57,7 +57,7 @@ trait HeaderDirectives {
   }
   
   def optionalHeaderValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[Option[T], Route]) = ScalaRoute {
-    D.optionalHeaderValueByType(ClassMagnet(t).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
+    D.optionalHeaderValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
       inner.apply(value.asInstanceOf[Option[T]]).toScala
     }
   }

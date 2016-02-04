@@ -6,18 +6,17 @@ import akka.http.scaladsl.server.RouteConcatenation._
 import akka.stream.scaladsl.Flow
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
-import akka.http.scaladsl.server.RoutingSettings
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server.RoutingSetup
 import akka.stream.Materializer
 import akka.http.scaladsl.server.{Route => SRoute}
 import akka.http.scaladsl
+import akka.NotUsed
 
 
 case class ScalaRoute(toScala: akka.http.scaladsl.server.Route) extends Route  {
   override def flow(system: ActorSystem, materializer: Materializer) = scalaFlow(system,materializer).asJava
   
-  private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, Unit] = {
+  private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val s = system
     implicit val m = materializer
     SRoute.handlerFlow(toScala)
