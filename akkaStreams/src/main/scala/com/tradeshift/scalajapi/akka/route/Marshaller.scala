@@ -6,7 +6,6 @@ import scala.concurrent.ExecutionContext
 import akka.http.javadsl.model.ContentType
 import akka.http.scaladsl
 import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.marshalling.MediaTypeOverrider
 import akka.http.scaladsl.marshalling._
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.HttpRequest
@@ -16,6 +15,7 @@ import akka.http.scaladsl.model.FormData
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.HttpHeader
 import com.tradeshift.scalajapi.collect.Seq
+import akka.http.javadsl.model.MediaType
 
 object Marshaller {
   def wrap[A,B](scalaMarshaller: marshalling.Marshaller[A,B]) = Marshaller()(scalaMarshaller)
@@ -46,30 +46,18 @@ object Marshaller {
   
   def fromDataToEntity: Marshaller[FormData,RequestEntity] = wrap(marshalling.Marshaller.FormDataMarshaller)
   
-  def wrapEntity[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,_ <: RequestEntity], contentType: ContentType): Marshaller[C,RequestEntity] = {
+  def wrapEntity[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,_ <: RequestEntity], mediaType: MediaType): Marshaller[C,RequestEntity] = {
     val scalaMarshaller = toScala(downcast(m, classOf[RequestEntity]).unwrap)
-    wrap(scalaMarshaller.wrapWithEC(contentType) { ctx => c:C => f(ctx,c) } ) 
+    wrap(scalaMarshaller.wrapWithEC(mediaType) { ctx => c:C => f(ctx,c) } ) 
   }
 
-  def wrapEntity[A,C](f:function.Function[C,A], m: Marshaller[A,_ <: RequestEntity], contentType: ContentType): Marshaller[C,RequestEntity] = {
+  def wrapEntity[A,C](f:function.Function[C,A], m: Marshaller[A,_ <: RequestEntity], mediaType: MediaType): Marshaller[C,RequestEntity] = {
     val scalaMarshaller = toScala(downcast(m, classOf[RequestEntity]).unwrap)
-    wrap(scalaMarshaller.wrap(contentType)(f.apply)) 
+    wrap(scalaMarshaller.wrap(mediaType)(f.apply)) 
   }
 
-  def wrapResponse[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,HttpResponse], contentType: ContentType): Marshaller[C,HttpResponse] = {
-    wrap(toScala(m.unwrap).wrapWithEC(contentType) { ctx => c:C => f(ctx,c) }) 
-  }
-  
-  def wrapResponse[A,C](f:function.Function[C,A], m: Marshaller[A,HttpResponse], contentType: ContentType): Marshaller[C,HttpResponse] = {
-    wrap(toScala(m.unwrap).wrap(contentType)(f.apply)) 
-  }
-  
-  def wrapRequest[A,C](f:function.BiFunction[ExecutionContext,C,A], m: Marshaller[A,HttpRequest], contentType: ContentType): Marshaller[C,HttpRequest] = {
-    wrap(toScala(m.unwrap).wrapWithEC(contentType) { ctx => c:C => f(ctx,c) }) 
-  }
-  
-  def wrapRequest[A,C](f:function.Function[C,A], m: Marshaller[A,HttpRequest], contentType: ContentType): Marshaller[C,HttpRequest] = {
-    wrap(toScala(m.unwrap).wrap(contentType)(f.apply)) 
+  def byteStringMarshaller(t: ContentType): Marshaller[ByteString, RequestEntity] = {
+    wrap(scaladsl.marshalling.Marshaller.byteStringMarshaller(t))
   }
   
   def entityToOKResponse[A](m: Marshaller[A,_ <: RequestEntity]): Marshaller[A,HttpResponse] = {

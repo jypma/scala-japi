@@ -4,7 +4,6 @@ import akka.http.scaladsl.unmarshalling
 import scala.concurrent.ExecutionContext
 import com.tradeshift.scalajapi.concurrent.Future
 import com.tradeshift.scalajapi.collect.Seq
-import akka.stream.Materializer
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
 import akka.http.scaladsl.model.ContentTypeRange
@@ -34,20 +33,11 @@ object Unmarshaller {
     ctx => a => scala.concurrent.Future.successful(f.apply(a))
   })
   
-  def entityToByteString(implicit materializer: Materializer) = 
-    wrapFromHttpEntity(unmarshalling.Unmarshaller.byteStringUnmarshaller)
-  
-  def entityToByteArray(implicit materializer: Materializer) = 
-    wrapFromHttpEntity(unmarshalling.Unmarshaller.byteArrayUnmarshaller)
-  
-  def entityToCharArray(implicit materializer: Materializer) = 
-    wrapFromHttpEntity(unmarshalling.Unmarshaller.charArrayUnmarshaller)
-  
-  def entityToString(implicit materializer: Materializer) = 
-    wrapFromHttpEntity(unmarshalling.Unmarshaller.stringUnmarshaller)
-  
-  def entityToUrlEncodedFormData(implicit materializer: Materializer) = 
-    wrapFromHttpEntity(unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller)
+  def entityToByteString = wrapFromHttpEntity(unmarshalling.Unmarshaller.byteStringUnmarshaller)
+  def entityToByteArray = wrapFromHttpEntity(unmarshalling.Unmarshaller.byteArrayUnmarshaller)
+  def entityToCharArray = wrapFromHttpEntity(unmarshalling.Unmarshaller.charArrayUnmarshaller)
+  def entityToString = wrapFromHttpEntity(unmarshalling.Unmarshaller.stringUnmarshaller)
+  def entityToUrlEncodedFormData = wrapFromHttpEntity(unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller)
   
   def requestToEntity = wrap(unmarshalling.Unmarshaller[HttpRequest,RequestEntity] {
     ctx => request => scala.concurrent.Future.successful(request.entity())
@@ -93,11 +83,8 @@ case class Unmarshaller[A,B] private (implicit val unwrap: unmarshalling.Unmarsh
     
   def map[C](f: java.util.function.Function[B,C]): Unmarshaller[A, C] = wrap(unwrap.map(f.apply))
   
-  def flatMap[C](f: java.util.function.BiFunction[ExecutionContext,B,Future[C]]): Unmarshaller[A, C] = 
-    wrap(unwrap.flatMap { ctx => a => f.apply(ctx, a).unwrap })
-  
   def flatMap[C](u: Unmarshaller[_ >: B,C]): Unmarshaller[A,C] =
-    wrap(unwrap.flatMap { ctx => a => u.unwrap.apply(a)(ctx) })
+    wrap(unwrap.flatMap { ctx => mat => b => u.unwrap.apply(b)(ctx, mat) })
     
   def mapWithInput[C](f: java.util.function.BiFunction[A, B, C]): Unmarshaller[A, C] =
     wrap(unwrap.mapWithInput { case (a,b) => f.apply(a, b) })

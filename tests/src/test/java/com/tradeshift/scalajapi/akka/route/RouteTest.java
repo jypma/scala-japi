@@ -53,14 +53,14 @@ public class RouteTest extends RouteTestKit {
     
     private final Unmarshaller<HttpRequest,BigDecimal> BIG_DECIMAL_BODY =
         Unmarshaller.requestToEntity()
-                    .flatMap(Unmarshaller.entityToString(materializer()))
+                    .flatMap(Unmarshaller.entityToString())
                     .map(s -> new BigDecimal(s));
     
     private final Unmarshaller<HttpRequest,UUID> UUID_FROM_JSON_BODY =
         Unmarshaller.requestToEntity()
                     .flatMap(
                         Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON,
-                        Unmarshaller.entityToString(materializer())))
+                        Unmarshaller.entityToString()))
                     .map(s -> {
                         // just a fake JSON parser, assuming it's {"id":"..."}
                         Pattern regex = Pattern.compile("\"id\":\"(.+)\"");
@@ -73,7 +73,7 @@ public class RouteTest extends RouteTestKit {
         Unmarshaller.requestToEntity()
                     .flatMap(
                         Unmarshaller.forMediaTypes(Seq.of(MediaTypes.TEXT_XML, MediaTypes.APPLICATION_XML),
-                        Unmarshaller.entityToString(materializer())))
+                        Unmarshaller.entityToString()))
                     .map(s -> {
                         // just a fake XML parser, assuming it's <id>...</id>
                         Pattern regex = Pattern.compile("<id>(.+)</id>");
@@ -85,31 +85,22 @@ public class RouteTest extends RouteTestKit {
     private final Unmarshaller<HttpRequest,UUID> UUID_FROM_BODY = 
         Unmarshaller.firstOf(UUID_FROM_JSON_BODY, UUID_FROM_XML_BODY);
     
-    private final Marshaller<UUID, RequestEntity> UUID_TO_RQ = Marshaller.wrapEntity(
-        (UUID u) -> "{\"id\":\"" + u + "\"}",
-        Marshaller.stringToEntity(), 
-        ContentType.create(MediaTypes.APPLICATION_JSON) 
-    );
-    
     private final Marshaller<UUID, RequestEntity> UUID_TO_JSON = Marshaller.wrapEntity(
         (UUID u) -> "{\"id\":\"" + u + "\"}",
         Marshaller.stringToEntity(), 
-        ContentType.create(MediaTypes.APPLICATION_JSON) 
+        MediaTypes.APPLICATION_JSON 
     );
-    
-    private final Marshaller<UUID, RequestEntity> UUID_TO_XML(MediaType xmlType) { 
-        return Marshaller.wrapEntity(
-            (UUID u) -> ByteString.fromString("<id>" + u + "</id>"), 
-            Marshaller.byteStringToEntity(), 
-            ContentType.create(xmlType) 
-        );
+            
+    private final Marshaller<UUID, RequestEntity> UUID_TO_XML(ContentType xmlType) { 
+        return Marshaller.byteStringMarshaller(xmlType).compose(
+            (UUID u) -> ByteString.fromString("<id>" + u + "</id>")); 
     }
     
     private final Marshaller<UUID, RequestEntity> UUID_TO_ENTITY = 
         Marshaller.oneOf(
             UUID_TO_JSON,
-            UUID_TO_XML(MediaTypes.APPLICATION_XML),
-            UUID_TO_XML(MediaTypes.TEXT_XML)
+            UUID_TO_XML(MediaTypes.APPLICATION_XML.toContentType(HttpCharsets.UTF_8)),
+            UUID_TO_XML(MediaTypes.TEXT_XML.toContentType(HttpCharsets.UTF_8))
         );
     
     private static boolean isUUID(String s) {
@@ -148,26 +139,36 @@ public class RouteTest extends RouteTestKit {
         public UUID uuid() {
             return value;
         }
+        
+        @Override
+        public boolean renderInRequests() {
+            return true;
+        }
+        
+        @Override
+        public boolean renderInResponses() {
+            return true;
+        }
     }
     
     @Test
     public void path_can_match_uuid() {
         on(HttpRequest.GET("/documents/359e4920-a6a2-4614-9355-113165d600fb"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("document 359e4920-a6a2-4614-9355-113165d600fb");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("document 359e4920-a6a2-4614-9355-113165d600fb");            
         });
     }
     
     @Test
     public void path_can_match_element() {
         on(HttpRequest.GET("/people/john"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("person john");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("person john");            
         });
     }
     
     @Test
     public void param_is_extracted() {
         on(HttpRequest.GET("/cookies?amount=5"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("cookies 5");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("cookies 5");            
         });
     }
     
@@ -181,7 +182,7 @@ public class RouteTest extends RouteTestKit {
     @Test
     public void wrong_param_type_causes_next_route_to_be_evaluated() {
         on(HttpRequest.GET("/cookies?amount=one"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("cookies (string) one");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("cookies (string) one");            
         });
     }
     
@@ -189,44 +190,44 @@ public class RouteTest extends RouteTestKit {
     public void required_param_causes_404_on_sealed_route() {
         onSealed(HttpRequest.GET("/cookies"), route, () -> {
             assertThat(status()).isEqualTo(StatusCodes.NOT_FOUND);
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("Request is missing required query parameter 'amount'");
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("Request is missing required query parameter 'amount'");
         });        
     }
     
     @Test
     public void custom_param_type_can_be_extracted() {
         on(HttpRequest.GET("/cakes?amount=5"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("cakes 5");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("cakes 5");            
         });
     }
     
     @Test
     public void custom_extractors_can_be_invoked() {
         on(HttpRequest.GET("/bar").addHeader(RawHeader.create("foo", "hello")), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("bar hello");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("bar hello");            
         });        
     }
     
     @Test
     public void entity_can_be_unmarshalled() {
         on(HttpRequest.POST("/bigdecimal").withEntity("1234"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("body 1234");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("body 1234");            
         });        
     }
     
     @Test
     public void entity_can_be_unmarshalled_when_picking_json_unmarshaller() {
-        on(HttpRequest.PUT("/uuid").withEntity(ContentType.create(MediaTypes.APPLICATION_JSON, HttpCharsets.UTF_8), 
+        on(HttpRequest.PUT("/uuid").withEntity(MediaTypes.APPLICATION_JSON.toContentType(), 
             "{\"id\":\"76b38659-1dec-4ee6-86d0-9ca787bf578c\"}"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");            
         });        
     }
     
     @Test
     public void entity_can_be_unmarshalled_when_picking_xml_unmarshaller() {
-        on(HttpRequest.PUT("/uuid").withEntity(ContentType.create(MediaTypes.APPLICATION_XML), 
+        on(HttpRequest.PUT("/uuid").withEntity(MediaTypes.APPLICATION_XML.toContentType(HttpCharsets.UTF_8), 
             "<id>76b38659-1dec-4ee6-86d0-9ca787bf578c</id>"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");            
         });        
     }
     
@@ -234,7 +235,7 @@ public class RouteTest extends RouteTestKit {
     public void entity_can_be_marshalled_when_json_is_accepted() {
         on(HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.APPLICATION_JSON))), route, () -> {
             assertThat(contentType().mediaType()).isEqualTo(MediaTypes.APPLICATION_JSON);
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("{\"id\":\"80a05eee-652e-4458-9bee-19b69dbe1dee\"}");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("{\"id\":\"80a05eee-652e-4458-9bee-19b69dbe1dee\"}");            
         });                
     }
     
@@ -242,7 +243,7 @@ public class RouteTest extends RouteTestKit {
     public void entity_can_be_marshalled_when_xml_is_accepted() {
         on(HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.TEXT_XML))), route, () -> {
             assertThat(contentType().mediaType()).isEqualTo(MediaTypes.TEXT_XML);
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("<id>80a05eee-652e-4458-9bee-19b69dbe1dee</id>");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("<id>80a05eee-652e-4458-9bee-19b69dbe1dee</id>");            
         });                
     }
     
@@ -264,7 +265,7 @@ public class RouteTest extends RouteTestKit {
     @Test
     public void exception_handlers_are_applied_even_if_the_route_throws_in_future() {
         on(HttpRequest.GET("/shouldnotfail"), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("no problem!");            
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("no problem!");            
         });        
     }
     
@@ -285,14 +286,14 @@ public class RouteTest extends RouteTestKit {
     @Test
     public void route_with_required_header_succeeds_when_header_is_present_as_RawHeader() {
         on(HttpRequest.GET("/requiredheader").addHeader(RawHeader.create("UUID", "98610fcb-7b19-4639-8dfa-08db8ac19320")), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
         });                        
     }
     
     @Test
     public void route_with_required_header_succeeds_when_header_is_present_as_custom_type() {
         on(HttpRequest.GET("/requiredheader").addHeader(new UUIDHeader(UUID.fromString("98610fcb-7b19-4639-8dfa-08db8ac19320"))), route, () -> {
-            assertThat(responseEntityStrict().data().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
+            assertThat(responseEntityStrict().getData().utf8String()).isEqualTo("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
         });                                
     }
     

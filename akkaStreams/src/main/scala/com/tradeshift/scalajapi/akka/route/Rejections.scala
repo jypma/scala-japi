@@ -6,6 +6,7 @@ import com.tradeshift.scalajapi.collect.Seq
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model.HttpMethod
 import akka.http.javadsl.model.MediaType
+import akka.http.scaladsl
 import akka.http.scaladsl.model.ContentTypeRange
 import akka.http.javadsl.model.headers.HttpEncoding
 import akka.http.javadsl.model.headers.ByteRange
@@ -55,8 +56,11 @@ object Rejections {
     
   def requestEntityExpected = RequestEntityExpectedRejection
   
-  def unacceptedResponseContentType(supported: Set[ContentType]) = 
-    UnacceptedResponseContentTypeRejection(supported.unwrap)
+  def unacceptedResponseContentType(supportedContentTypes: Set[ContentType], supportedMediaTypes: Set[MediaType]) = 
+    UnacceptedResponseContentTypeRejection(
+      supportedContentTypes.unwrap.map(t ⇒ (t: scaladsl.model.ContentType): ContentNegotiator.Alternative).toSet ++
+      supportedMediaTypes.unwrap.map(t ⇒ (t: scaladsl.model.MediaType): ContentNegotiator.Alternative).toSet)
+
   
   def unacceptedResponseEncoding(supported: HttpEncoding) =
     UnacceptedResponseEncodingRejection(supported)
@@ -72,7 +76,7 @@ object Rejections {
   
   def missingCookie(cookieName: String) = MissingCookieRejection(cookieName)
   
-  def expectedWebsocketRequest = ExpectedWebsocketRequestRejection
+  def expectedWebSocketRequest = ExpectedWebSocketRequestRejection
   
   def validationRejection(message: String) = ValidationRejection(message)
   def validationRejection(message: String, cause: Option[Throwable]) = ValidationRejection(message, cause.unwrap)
