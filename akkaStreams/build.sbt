@@ -1,8 +1,8 @@
 name := "akkaStreams"
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.2-RC2"
-  val akkaStreamVersion = "2.4.2-RC2"
+  val akkaVersion = "2.4.2"
+  val akkaStreamVersion = "2.4.2"
 
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
