@@ -7,6 +7,7 @@ libraryDependencies ++= {
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-experimental" % akkaStreamVersion
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaStreamVersion,
+    "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0"
   )
 }
