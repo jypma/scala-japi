@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -304,8 +306,8 @@ public class RouteTest extends RouteTestKit {
     
     private static Function<RequestContext,String> CUSTOM_EXTRACT = ctx -> ctx.getRequest().getHeader("foo").get().value();
     
-    private Future<Integer> throwExceptionInFuture() {
-        return Future.<Integer>call(() -> { throw new IllegalArgumentException("always failing"); });
+    private CompletionStage<Integer> throwExceptionInFuture() {
+        return CompletableFuture.<Integer>supplyAsync(() -> { throw new IllegalArgumentException("always failing"); });
     }
     
     public Route getRoute() {
